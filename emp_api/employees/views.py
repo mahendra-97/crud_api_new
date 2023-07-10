@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from django import forms
 from django.views import View
 from .models import Employee
+import re
 
 from .forms import EmpForm
 
@@ -41,6 +42,25 @@ class EmployeeAPI(APIView):
             ephone = request.POST.get('ephone')
             eemail = request.POST.get('eemail')
             edepartment = request.POST.get('edepartment')
+
+            # # Validate the Email
+            # validate_email(eemail)
+
+            # Split the email addresses by commas
+            eemail_list = [email.strip() for email in eemail.split(',')]
+
+            print(eemail_list)
+
+            # Validate each email address
+            for email in eemail_list:
+                validate_email(email)
+
+            # Validate the mobile number
+            pattern = r'^(?:\+91|0)?[6-9]\d{9}$'
+            if not re.match(pattern, ephone):
+                return JsonResponse({'error': 'Invalid phone number'}, status=400)
+            
+
 
             employee = Employee.objects.create(eid=eid, ename=ename, ephone=ephone, eemail=eemail, edepartment=edepartment)
 
