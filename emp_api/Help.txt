@@ -1,0 +1,135 @@
+from django.test import TestCase
+from django.forms import ValidationError
+from django.urls import reverse
+from employees.models import Employee
+from rest_framework.test import APIClient
+from rest_framework import status
+
+
+
+class EmployeeTest(TestCase):
+    def test_valid_email(self):
+        employee = Employee(eid=1,
+                            ename='John Doe',
+                            ephone='9876543210',
+                            eemail='john@example.com, jane@example.com',
+                            edepartment='Sales')
+        self.assertEqual(employee.clean_fields(), None)
+
+    def test_invalid_email(self):
+        employee = Employee(eid=1,
+                            ename='John Doe',
+                            ephone='9876543210',
+                            eemail='john@example',
+                            edepartment='Sales')
+        with self.assertRaises(ValidationError):
+            employee.clean_fields()
+
+
+class EmployeeTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.emp1 = Employee.objects.create(eid='2',
+                                            ename='Mahendra',
+                                            ephone='1234567890',
+                                            eemail='mahendra@example',
+                                            edepartment='Development')
+        self.emp2 = Employee.objects.create(eid='3',
+                                            ename='Stanley',
+                                            ephone='9874563210',
+                                            eemail='stan@example',
+                                            edepartment='Data Engineering')
+
+    def test_get_all_employees(self):
+        response = self.client.get(reverse('Employee_api'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), [
+            {'eid': '2', 'ename': 'Mahendra', 'ephone': '1234567890', 'eemail': 'mahendra@example', 'edepartment': 'Development'},
+            {'eid': '3', 'ename': 'Stanley', 'ephone': '9874563210', 'eemail': 'stan@example', 'edepartment': 'Data Engineering'}
+        ])
+
+    def test_invalid_get_all_employees(self):
+        response = self.client.get(reverse('Employee_api'))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_post_employee(self):
+        data = {
+            'eid': 4,
+            'ename': 'John Doe',
+            'ephone': '9876543210',
+            'eemail': 'john@example.com, jane@example.com',
+            'edepartment': 'Sales'
+        }
+        response = self.client.post(reverse('Employee_api'), data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Employee.objects.count(), 3)
+        self.assertEqual(response.json(), {'id': 4, 'success': 'Employee created successfully'})
+
+    def test_invalid_email_address(self):
+        data = {
+            'eid': 4,
+            'ename': 'John Doe',
+            'ephone': '1234567890',
+            'eemail': 'invalid_mail',
+            'edepartment': 'Sales'
+        }
+        response = self.client.post(reverse('Employee_api'), data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json(), {
+            'error': "error: ['Enter a valid email address.']"
+        })
+
+    def test_invalid_post_employee(self):
+        data = {
+            'eid': 4,
+            'ename': 'John Doe',
+            'eemail': 'john@example.com',
+            'edepartment': 'Sales'
+        }
+        response = self.client.post(reverse('Employee_api'), data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_invalid_post_employee_wrong_format(self):
+        data = {
+            'eid': 4,
+            'ename': 'John Doe',
+            'ephone': '1234567',
+            'eemail': 'john@example.com',
+            'edepartment': 'Sales'
+        }
+        response = self.client.post(reverse('Employee_api'), data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_put_employee(self):
+        data = {
+            'ename': 'John Doe',
+            'ephone': '9874563210',
+            'eemail': 'mahendrasonawane@gmail.com',
+            'edepartment': 'Gaming'
+        }
+        response = self.client.put(reverse('employee-detail-api', kwargs={'id': self.emp1.eid}), data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Employee.objects.get(eid=self.emp1.eid).edepartment, 'Gaming')
+
+    def test_put_invalid_email_address(self):
+        data = {
+            'ename': 'John',
+            'ephone': '9874563211',
+            'eemail': 'invalid_email',
+            'edepartment': 'IT'
+        }
+        response = self.client.put(reverse('employee-detail-api', kwargs={'id': self.emp1.eid}), data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.json(), {
+            'error': "error: ['Enter a valid email address.']"
+        })
+
+    def test_delete_employee(self):
+        response = self.client.delete(reverse('employee-detail-api', kwargs={'id': self.emp1.eid}))
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Employee.objects.count(), 1)
+
+    def test_invalid_delete_employee(self):
+        response = self.client.delete(reverse('employee-detail-api', kwargs={'id': '5'}))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(Employee.objects.count(), 2)

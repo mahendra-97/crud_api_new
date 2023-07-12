@@ -5,6 +5,7 @@ from django.utils.decorators import method_decorator
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from rest_framework.views import APIView
+from rest_framework import status
 from django import forms
 from django.views import View
 from .models import Employee
@@ -65,6 +66,11 @@ class EmployeeAPI(APIView):
             employee = Employee.objects.create(eid=eid, ename=ename, ephone=ephone, eemail=eemail, edepartment=edepartment)
 
             return JsonResponse({'id': employee.eid, 'success': 'Employee created successfully'})
+        
+        except ValidationError as e:
+            data = {'status':'error','error_code': 422, 'message': "['Enter a valid email address.']".format(e)}
+            return JsonResponse(data, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
         
@@ -83,9 +89,19 @@ class EmployeeAPI(APIView):
             employee.edepartment = department
             employee.save()
 
+            eemail_list = [email.strip() for email in employee.eemail.split(',')]
+            # Validate each email address
+            for email in eemail_list:
+                validate_email(email)
+
             return JsonResponse({'success': 'Employee updated successfully'})
         except Employee.DoesNotExist:
             return JsonResponse({'error': 'Employee not found'}, status=404)
+        
+        except ValidationError as e:
+            data = {'status':'error','error_code': 422, 'message': "['Enter a valid email address.']".format(e)}
+            return JsonResponse(data, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
 
