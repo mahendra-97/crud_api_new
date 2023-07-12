@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
+# from django.views.decorators.csrf import csrf_exempt
+# from django.utils.decorators import method_decorator
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from rest_framework.views import APIView
