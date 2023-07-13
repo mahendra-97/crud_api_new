@@ -135,7 +135,7 @@ class EmployeePutTest(TestCase):
     def test_delete_employee(self):
         # delete an existing employee
         response = self.client.delete(f'/employees/{self.employee.eid}')
-        print(response.content)
+        # print(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Employee.objects.count(), 0)
 
@@ -143,7 +143,7 @@ class EmployeePutTest(TestCase):
         # delete an existing employee
         response = self.client.delete(f'/employees/{self.employee.eid}')
         response = self.client.delete(f'/employees/{self.employee.eid}')
-        print(response.content)
+        # print(response.content)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(Employee.objects.count(), 0)
         output_response = {"error": "Employee not found"}
